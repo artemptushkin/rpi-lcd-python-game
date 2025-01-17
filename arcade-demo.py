@@ -73,13 +73,19 @@ class DogSpriteDemo(arcade.Window):
 
         # Load sprite sheet and textures
         sprite_sheet_path = "static/welsh-corgi-sprites/corgi-asset.png"  # Path to the sprite sheet
-        textures_by_state_name = load_textures_by_state(
+        self.textures_by_state_name = load_textures_by_state(
             sprite_sheet_path,
             SPRITE_WIDTH,
             SPRITE_HEIGHT,
             ROWS,
-        )["sit"]
-        self.sprite_data = SpriteData(0, len(textures_by_state_name), textures_by_state_name)
+        )
+
+        # Schedule the animation update
+        arcade.schedule(self.update_texture, FRAME_DELAY)
+
+    def sit(self):
+        current_textures = self.textures_by_state_name["sit"]
+        self.sprite_data = SpriteData(0, len(current_textures), current_textures)
 
         # Create the dog sprite
         self.dog_sprite_list = arcade.SpriteList()
@@ -90,8 +96,18 @@ class DogSpriteDemo(arcade.Window):
 
         self.dog_sprite_list.append(self.dog_sprite)
 
-        # Schedule the animation update
-        arcade.schedule(self.update_texture, FRAME_DELAY)
+    def jump(self):
+        current_textures = self.textures_by_state_name["jump"]
+        self.sprite_data = SpriteData(0, len(current_textures), current_textures)
+
+        # Create the dog sprite
+        self.dog_sprite_list = arcade.SpriteList()
+        self.dog_sprite = arcade.Sprite(scale=SPRITE_SCALING)
+        self.dog_sprite.texture = self.sprite_data.textures[self.sprite_data.current_frame]
+        self.dog_sprite.center_x = SCREEN_WIDTH // 2
+        self.dog_sprite.center_y = SCREEN_HEIGHT // 2
+
+        self.dog_sprite_list.append(self.dog_sprite)
 
     def update_texture(self, delta_time):
         """Update the sprite texture every FRAME_DELAY seconds."""
@@ -117,8 +133,8 @@ class DogSpriteDemo(arcade.Window):
 def main():
     dog = DogSpriteDemo()
     dog.setup()
+    dog.sit()
     arcade.run()
-
 
 if __name__ == "__main__":
     main()
