@@ -1,9 +1,12 @@
+import os
 import sys
 
 import arcade
 import time
 
 from build_hat_controller import lego_build_hat_input
+
+os.environ["DISPLAY"] = ":0"
 
 # Constants
 SCREEN_WIDTH = 1280
