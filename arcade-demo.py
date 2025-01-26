@@ -1,3 +1,5 @@
+import sys
+
 import arcade
 import time
 
@@ -25,6 +27,14 @@ states_columns = {
 }
 FRAME_DELAY = 0.1  # Time in seconds between frame changes
 
+def mock_lego_build_hat_input():
+    # This is just a mock. Replace it with actual Lego Build Hat logic later.
+    # Returns a dictionary of mock inputs for testing
+    return {
+        "jump": False,
+        "walk_left": False,
+        "walk_right": False
+    }
 
 def load_textures_by_state(sprite_sheet_path, sprite_width, sprite_height, rows):
     textures_by_state = {}
@@ -57,8 +67,9 @@ class SpriteData:
 
 
 class DogSpriteDemo(arcade.Window):
-    def __init__(self):
+    def __init__(self, is_mac):
         super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
+        self.is_mac = is_mac
         self.textures_by_state_name = None
         self.dog_sprite_list = None  # SpriteList for the dog sprite
         self.dog_sprite = None  # The animated sprite
@@ -189,24 +200,40 @@ class DogSpriteDemo(arcade.Window):
         self.dog_sprite_list.draw()
 
     def on_key_press(self, key, modifiers):
-        if key == arcade.key.SPACE and not self.is_jumping:
-            self.jump()
-        elif key == arcade.key.LEFT:
-            self.walk("left")
-        elif key == arcade.key.RIGHT:
-            self.walk("right")
+        if self.is_mac:
+            if key == arcade.key.SPACE and not self.is_jumping:
+                self.jump()
+            elif key == arcade.key.LEFT:
+                self.walk("left")
+            elif key == arcade.key.RIGHT:
+                self.walk("right")
+        else:
+            # Placeholder for Lego Build Hat controls
+            inputs = mock_lego_build_hat_input()
+            if inputs["jump"] and not self.is_jumping:
+                self.jump()
+            elif inputs["walk_left"]:
+                self.walk("left")
+            elif inputs["walk_right"]:
+                self.walk("right")
 
     def on_key_release(self, key, modifiers):
-        if key in (arcade.key.LEFT, arcade.key.RIGHT):
+        if self.is_mac:
+            if key in (arcade.key.LEFT, arcade.key.RIGHT):
+                self.dog_sprite.change_x = 0
+                self.is_walking = False
+
+                # Switch to the sit animation
+                self.sit()
+        else:
+            # Placeholder for Lego Build Hat controls
             self.dog_sprite.change_x = 0
             self.is_walking = False
-
-            # Switch to the sit animation
             self.sit()
 
-
 def main():
-    dog = DogSpriteDemo()
+    is_mac = '--mac' in sys.argv
+    dog = DogSpriteDemo(is_mac)
     dog.setup()
     arcade.run()
 
