@@ -6,7 +6,7 @@ import time
 
 from build_hat_controller import lego_build_hat_input
 
-os.environ["DISPLAY"] = ":0"
+os.environ["DISPLAY"] = ":0" # todo only RPI
 
 # Constants
 SCREEN_WIDTH = 1280
