@@ -2,13 +2,16 @@ import arcade
 import time
 
 # Constants
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
+SCREEN_WIDTH = 1280
+SCREEN_HEIGHT = 720
 SCREEN_TITLE = "Dog Sprite Demo"
 SPRITE_SCALING = 2.5
 SPRITE_WIDTH = 64  # Update to match your sprite's width
 SPRITE_HEIGHT = 64  # Update to match your sprite's height
 ROWS = 8
+INITIAL_POSITION_X = SCREEN_WIDTH // 2  # Initial X position
+INITIAL_POSITION_Y = SCREEN_HEIGHT // 2  # Initial Y position
+JUMP_MOVE_X = 50  # Horizontal movement during jump
 first_col_width = 100
 states_columns = {
     "jump": 11,
@@ -64,11 +67,17 @@ class DogSpriteDemo(arcade.Window):
         self.jump_frames_remaining = 0
         self.is_walking = False
         self.facing_right = True
+        self.background_texture = None
+        self.start_jump_x = None
+        self.jump_increment_x = None
+        self.start_jump_y = None
 
     def setup(self):
         """Set up the game and initialize variables."""
         # Set the background color
         arcade.set_background_color(arcade.color.WHITE)
+
+        self.background_texture = arcade.load_texture("static/background/city_winter.png")
 
         # Load sprite sheet and textures
         sprite_sheet_path = "static/welsh-corgi-sprites/corgi-asset.png"  # Path to the sprite sheet
@@ -86,33 +95,49 @@ class DogSpriteDemo(arcade.Window):
         arcade.schedule(self.update_texture, FRAME_DELAY)
 
     def sit(self):
+        current_x = self.dog_sprite.center_x if self.dog_sprite else INITIAL_POSITION_X
+        current_y = self.dog_sprite.center_y if self.dog_sprite else INITIAL_POSITION_X
+
         current_textures = self.textures_by_state_name["sit"]
         self.sprite_data = SpriteData(0, len(current_textures), current_textures)
 
         # Create the dog sprite
         self.dog_sprite_list = arcade.SpriteList()
         self.dog_sprite = arcade.Sprite(scale=SPRITE_SCALING)
-        self.dog_sprite.texture = self.sprite_data.textures[self.sprite_data.current_frame][0 if self.facing_right else 1]
-        self.dog_sprite.center_x = SCREEN_WIDTH // 2
-        self.dog_sprite.center_y = SCREEN_HEIGHT // 2
+        self.dog_sprite.texture = self.sprite_data.textures[self.sprite_data.current_frame][
+            0 if self.facing_right else 1]
+        self.dog_sprite.center_x = current_x  # Retain the X position
+        self.dog_sprite.center_y = current_y  # Retain the Y position
 
         self.dog_sprite_list.append(self.dog_sprite)
         self.is_walking = False
 
     def jump(self):
         current_textures = self.textures_by_state_name["jump"]
-        self.sprite_data = SpriteData(0, len(current_textures), current_textures)
+        total_frames = len(current_textures)
 
-        # Create the dog sprite
+        self.sprite_data = SpriteData(0, total_frames, current_textures)
+
+        # Retain the current position of the dog
+        self.start_jump_x = self.dog_sprite.center_x if self.dog_sprite else INITIAL_POSITION_X
+        self.start_jump_y = self.dog_sprite.center_y if self.dog_sprite else INITIAL_POSITION_Y
+
+        # Calculate incremental movement per frame
+        self.jump_increment_x = JUMP_MOVE_X / total_frames * (1 if self.facing_right else -1)
+
+        # Initialize jump animation
         self.dog_sprite_list = arcade.SpriteList()
         self.dog_sprite = arcade.Sprite(scale=SPRITE_SCALING)
-        self.dog_sprite.texture = self.sprite_data.textures[self.sprite_data.current_frame][0 if self.facing_right else 1]
-        self.dog_sprite.center_x = SCREEN_WIDTH // 2
-        self.dog_sprite.center_y = SCREEN_HEIGHT // 2
+        self.dog_sprite.texture = self.sprite_data.textures[self.sprite_data.current_frame][
+            0 if self.facing_right else 1]
+
+        # Set the position to the current position, ensuring center_y is unchanged
+        self.dog_sprite.center_x = self.start_jump_x
+        self.dog_sprite.center_y = self.start_jump_y
 
         self.dog_sprite_list.append(self.dog_sprite)
         self.is_jumping = True
-        self.jump_frames_remaining = len(current_textures)
+        self.jump_frames_remaining = total_frames
 
     def walk(self, direction):
         current_textures = self.textures_by_state_name["walk"]
@@ -134,10 +159,16 @@ class DogSpriteDemo(arcade.Window):
     def update_texture(self, delta_time):
         """Update the sprite texture every FRAME_DELAY seconds."""
         if self.sprite_data:
+            # Update texture frame
             self.sprite_data.current_frame = (
-                self.sprite_data.current_frame + 1
-            ) % self.sprite_data.length  # Cycle between frames 0 to frame
-            self.dog_sprite.texture = self.sprite_data.textures[self.sprite_data.current_frame][0 if self.facing_right else 1]
+                                                     self.sprite_data.current_frame + 1
+                                             ) % self.sprite_data.length
+            self.dog_sprite.texture = self.sprite_data.textures[self.sprite_data.current_frame][
+                0 if self.facing_right else 1]
+
+            # Smoothly move horizontally during the jump
+            if self.is_jumping:
+                self.dog_sprite.center_x += self.jump_increment_x
 
         # Handle jump state completion
         if self.is_jumping:
@@ -149,16 +180,13 @@ class DogSpriteDemo(arcade.Window):
     def on_draw(self):
         arcade.start_render()
 
-        self.dog_sprite_list.draw()
-        for sprite in self.dog_sprite_list:
-            arcade.draw_rectangle_outline(
-                center_x=sprite.center_x,
-                center_y=sprite.center_y,
-                width=sprite.width,
-                height=sprite.height,
-                color=arcade.color.BLACK,
-                border_width=2  # Thickness of the border
+        # Draw the background image
+        if self.background_texture:
+            arcade.draw_lrwh_rectangle_textured(
+                0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, self.background_texture
             )
+
+        self.dog_sprite_list.draw()
 
     def on_key_press(self, key, modifiers):
         if key == arcade.key.SPACE and not self.is_jumping:
@@ -172,6 +200,9 @@ class DogSpriteDemo(arcade.Window):
         if key in (arcade.key.LEFT, arcade.key.RIGHT):
             self.dog_sprite.change_x = 0
             self.is_walking = False
+
+            # Switch to the sit animation
+            self.sit()
 
 
 def main():
