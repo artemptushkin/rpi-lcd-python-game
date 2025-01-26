@@ -3,6 +3,8 @@ import sys
 import arcade
 import time
 
+from build_hat_controller import lego_build_hat_input
+
 # Constants
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
@@ -26,15 +28,6 @@ states_columns = {
     "sniff_walk": 8,
 }
 FRAME_DELAY = 0.1  # Time in seconds between frame changes
-
-def mock_lego_build_hat_input():
-    # This is just a mock. Replace it with actual Lego Build Hat logic later.
-    # Returns a dictionary of mock inputs for testing
-    return {
-        "jump": False,
-        "walk_left": False,
-        "walk_right": False
-    }
 
 def load_textures_by_state(sprite_sheet_path, sprite_width, sprite_height, rows):
     textures_by_state = {}
@@ -166,6 +159,12 @@ class DogSpriteDemo(arcade.Window):
         """Update game logic."""
         if self.dog_sprite:
             self.dog_sprite.center_x += self.dog_sprite.change_x
+        if not self.is_mac:  # Only for Build HAT (non-Mac version)
+            direction = lego_build_hat_input()  # Get the direction from the motor
+            if direction == "left":
+                self.walk("left")
+            elif direction == "right":
+                self.walk("right")
 
     def update_texture(self, delta_time):
         """Update the sprite texture every FRAME_DELAY seconds."""
@@ -206,15 +205,6 @@ class DogSpriteDemo(arcade.Window):
             elif key == arcade.key.LEFT:
                 self.walk("left")
             elif key == arcade.key.RIGHT:
-                self.walk("right")
-        else:
-            # Placeholder for Lego Build Hat controls
-            inputs = mock_lego_build_hat_input()
-            if inputs["jump"] and not self.is_jumping:
-                self.jump()
-            elif inputs["walk_left"]:
-                self.walk("left")
-            elif inputs["walk_right"]:
                 self.walk("right")
 
     def on_key_release(self, key, modifiers):
