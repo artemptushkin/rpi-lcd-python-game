@@ -9,8 +9,8 @@ SPRITE_SCALING = 2.5
 SPRITE_WIDTH = 64  # Update to match your sprite's width
 SPRITE_HEIGHT = 64  # Update to match your sprite's height
 ROWS = 8
-INITIAL_POSITION_X = SCREEN_WIDTH // 2  # Initial X position
-INITIAL_POSITION_Y = SCREEN_HEIGHT // 2  # Initial Y position
+INITIAL_POSITION_X = SCREEN_WIDTH // 4 - 150  # Initial X position
+INITIAL_POSITION_Y = SCREEN_HEIGHT // 4 - 50 # Initial Y position
 JUMP_MOVE_X = 50  # Horizontal movement during jump
 first_col_width = 100
 states_columns = {
@@ -95,11 +95,11 @@ class DogSpriteDemo(arcade.Window):
         arcade.schedule(self.update_texture, FRAME_DELAY)
 
     def sit(self):
-        current_x = self.dog_sprite.center_x if self.dog_sprite else INITIAL_POSITION_X
-        current_y = self.dog_sprite.center_y if self.dog_sprite else INITIAL_POSITION_X
-
         current_textures = self.textures_by_state_name["sit"]
         self.sprite_data = SpriteData(0, len(current_textures), current_textures)
+
+        current_x = self.dog_sprite.center_x if self.dog_sprite else INITIAL_POSITION_X
+        current_y = self.dog_sprite.center_y if self.dog_sprite else INITIAL_POSITION_Y
 
         # Create the dog sprite
         self.dog_sprite_list = arcade.SpriteList()
