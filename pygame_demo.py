@@ -9,11 +9,14 @@ os.environ["DISPLAY"] = ":0"  # Only for RPI
 # Constants
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
-SPRITE_SCALING = 2.5
+SPRITE_SCALING = 4
 SPRITE_WIDTH = 64
 SPRITE_HEIGHT = 64
-INITIAL_POSITION_X = SCREEN_WIDTH // 4 - 150
-INITIAL_POSITION_Y = SCREEN_HEIGHT // 4 - 50
+SPAWN_POINTS = {
+    "street": {"x": 0.10, "y": 0.55},    # 20% from left, 70% from top
+    "bench": {"x": 0.5, "y": 0.65},      # middle of screen
+    "park_entrance": {"x": 0.8, "y": 0.7} # 80% from left
+}
 JUMP_MOVE_X = 50
 FPS = 60
 FRAME_DELAY = 100  # milliseconds between frame changes
@@ -58,7 +61,7 @@ def load_textures_by_state(sprite_sheet, sprite_width, sprite_height):
     return textures_by_state
 
 class DogSprite(pygame.sprite.Sprite):
-    def __init__(self, textures_by_state):
+    def __init__(self, textures_by_state, initial_x, initial_y):
         super().__init__()
         self.textures_by_state = textures_by_state
         self.current_state = "sit"
@@ -75,8 +78,8 @@ class DogSprite(pygame.sprite.Sprite):
                                          (int(SPRITE_WIDTH * SPRITE_SCALING), 
                                           int(SPRITE_HEIGHT * SPRITE_SCALING)))
         self.rect = self.image.get_rect()
-        self.rect.x = INITIAL_POSITION_X
-        self.rect.y = INITIAL_POSITION_Y
+        self.rect.x = initial_x
+        self.rect.y = initial_y
         
         self.last_update = pygame.time.get_ticks()
         
@@ -91,12 +94,15 @@ class DogSprite(pygame.sprite.Sprite):
             self.current_state = "jump"
             self.current_frame = 0
             self.is_jumping = True
-            self.jump_frames_remaining = len(self.textures_by_state["jump"])
+            total_frames = len(self.textures_by_state["jump"])
+            self.jump_frames_remaining = total_frames
+            # Calculate horizontal movement per frame during jump
+            self.jump_x_per_frame = JUMP_MOVE_X / total_frames * (1 if self.facing_right else -1)
             
     def walk(self, direction):
         self.current_state = "walk"
         self.facing_right = direction == "right"
-        self.change_x = 4 if self.facing_right else -4
+        self.change_x = 10 if self.facing_right else -10
         self.is_walking = True
         
     def update(self):
@@ -104,7 +110,9 @@ class DogSprite(pygame.sprite.Sprite):
         if now - self.last_update > FRAME_DELAY:
             self.last_update = now
             
-            # Update position
+            # Update position - include jump movement if jumping
+            if self.is_jumping:
+                self.rect.x += self.jump_x_per_frame
             self.rect.x += self.change_x
             
             # Update animation frame
@@ -135,6 +143,11 @@ class Game:
         # Load background
         self.background = pygame.image.load("static/background/city_winter.png").convert()
         self.background = pygame.transform.scale(self.background, (SCREEN_WIDTH, SCREEN_HEIGHT))
+
+         # Calculate spawn position (using "street" as default spawn point)
+        spawn_point = SPAWN_POINTS["street"]
+        initial_x = int(SCREEN_WIDTH * spawn_point["x"])
+        initial_y = int(SCREEN_HEIGHT * spawn_point["y"])
         
         # Load sprite sheet and create dog sprite
         sprite_sheet = SpriteSheet("static/welsh-corgi-sprites/corgi-asset.png")
@@ -142,7 +155,7 @@ class Game:
         
         # Create sprite group and add dog
         self.all_sprites = pygame.sprite.Group()
-        self.dog = DogSprite(textures)
+        self.dog = DogSprite(textures, initial_x, initial_y)
         self.all_sprites.add(self.dog)
         
     def handle_input(self):
