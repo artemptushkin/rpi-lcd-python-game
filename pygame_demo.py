@@ -9,11 +9,11 @@ os.environ["DISPLAY"] = ":0"  # Only for RPI
 # Constants
 SCREEN_WIDTH = 1024
 SCREEN_HEIGHT = 576
-SPRITE_SCALING = 2.5
+SPRITE_SCALING = 3.2
 SPRITE_WIDTH = 64
 SPRITE_HEIGHT = 64
 SPAWN_POINTS = {
-    "street": {"x": 0.10, "y": 0.62},    # 20% from left, 70% from top
+    "street": {"x": 0.10, "y": 0.55},    # 20% from left, 70% from top
     "bench": {"x": 0.5, "y": 0.65},      # middle of screen
     "park_entrance": {"x": 0.8, "y": 0.7} # 80% from left
 }

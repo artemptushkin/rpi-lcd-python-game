@@ -2,7 +2,7 @@ from buildhat import Motor
 
 steering_motor = None
 last_position = None  # Changed to None to detect first run
-MIN_CHANGE_THRESHOLD = 5  # Reduced threshold for more responsive control
+MIN_CHANGE_THRESHOLD = 15  # Reduced threshold for more responsive control
 initial_position = None  # Store the very first position
 last_steering_value = 0  # Track the last steering value
 
@@ -24,8 +24,15 @@ def lego_build_hat_input():
     # Get the current rotation of the steering wheel
     current_position = steering_motor.get_position()
     
+    # Determine direction based on position change
+    direction = None
     # Calculate position relative to initial position
     relative_position = current_position - initial_position
+    if relative_position > 0:
+        direction = "right"
+    elif relative_position < 0:
+        direction = "left"
+
     
     # Only update if change is significant enough
     if abs(current_position - last_position) >= MIN_CHANGE_THRESHOLD:
@@ -58,5 +65,5 @@ def lego_build_hat_input():
         "has_new_input": has_new_input or has_new_direction,  # Allow movement on either condition
         "left": is_left,
         "right": is_right,
-        "direction": "left" if is_left else "right" if is_right else None
+        "direction": direction  # Use the direction based on position change
     }

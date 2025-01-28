@@ -62,8 +62,12 @@ class MotorMonitor:
                 self.current_position = new_position
                 
                 # Calculate movement based on current position
-                movement = (self.current_position / 100.0) * 300
-                self.current_x = self.base_x + movement
+                # Normalize the position to stay within board width
+                normalized_position = self.current_position % 360  # Convert to 0-360 range
+                movement_ratio = normalized_position / 360.0  # Convert to 0-1 range
+                available_width = WINDOW_WIDTH - self.object_width
+                movement = movement_ratio * available_width
+                self.current_x = movement  # Direct position instead of offset from base
                 self.current_x = max(0, min(self.current_x, WINDOW_WIDTH - self.object_width))
             time.sleep(0.1)
     
@@ -100,7 +104,7 @@ class MotorMonitor:
             screen.fill(BLACK)
             
             # Update direction text
-            direction = "RIGHT" if self.current_position > 0 else "LEFT"
+            direction = "RIGHT" if self.previous_position < self.current_position else "LEFT"
             direction_color = WHITE
             
             # Draw all the text and visuals
