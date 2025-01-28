@@ -102,7 +102,7 @@ class DogSprite(pygame.sprite.Sprite):
     def walk(self, direction):
         self.current_state = "walk"
         self.facing_right = direction == "right"
-        self.change_x = 10 if self.facing_right else -10
+        self.change_x = 5 if self.facing_right else -5
         self.is_walking = True
         
     def update(self):
@@ -114,6 +114,9 @@ class DogSprite(pygame.sprite.Sprite):
             if self.is_jumping:
                 self.rect.x += self.jump_x_per_frame
             self.rect.x += self.change_x
+            
+            # Keep the dog within screen boundaries
+            self.rect.x = max(0, min(self.rect.x, SCREEN_WIDTH - self.rect.width))
             
             # Update animation frame
             textures = self.textures_by_state[self.current_state]
@@ -176,12 +179,15 @@ class Game:
         
         if not self.is_mac:
             direction = lego_build_hat_input()
-            if direction["left"]:
-                self.dog.walk("left")
-            elif direction["right"]:
-                self.dog.walk("right")
-            elif self.dog.is_walking:
-                self.dog.sit()
+            if direction["left"] or direction["right"]:
+                if direction["left"]:
+                    self.dog.walk("left")
+                else:
+                    self.dog.walk("right")
+            else:
+                # If no active rotation, make the dog sit
+                if self.dog.is_walking:
+                    self.dog.sit()
                 
         return True
     
