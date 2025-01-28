@@ -4,57 +4,53 @@ steering_motor = None
 last_position = None  # Changed to None to detect first run
 MIN_CHANGE_THRESHOLD = 15
 initial_position = None  # Store the very first position
-last_significant_position = None  # Track the last position that caused movement
-last_check_time = None
-ROTATION_TIMEOUT = 0.1  # 100ms timeout for rotation
+last_steering_value = 0  # Track the last steering value
 
 def setup():
-    global steering_motor, last_position, initial_position, last_significant_position
+    global steering_motor
+    global last_position
+    global initial_position
     if steering_motor is None:
         steering_motor = Motor('A')
         # Initialize positions only if they haven't been set
         if last_position is None:
             initial_position = steering_motor.get_position()
             last_position = initial_position
-            last_significant_position = initial_position
 
 def lego_build_hat_input():
-    import time
     setup()
-    global last_position, initial_position, last_significant_position, last_check_time
+    global last_position, initial_position, last_steering_value
     
-    current_time = time.time()
     # Get the current rotation of the steering wheel
     current_position = steering_motor.get_position()
-    
-    # Calculate if there's active rotation
-    position_change = abs(current_position - last_position)
-    is_rotating = position_change >= MIN_CHANGE_THRESHOLD
-    
-    # Update last_position always to track continuous small changes
-    last_position = current_position
-    
-    # Update last check time if rotating
-    if is_rotating:
-        last_check_time = current_time
     
     # Calculate position relative to initial position
     relative_position = current_position - initial_position
     
+    # Only update if change is significant enough
+    if abs(current_position - last_position) >= MIN_CHANGE_THRESHOLD:
+        last_position = current_position
+        rotation = relative_position
+        has_new_input = True
+    else:
+        rotation = last_position - initial_position  # Use the last significant position relative to initial
+        has_new_input = False
+
     # Normalize the rotation to a value between -1 and 1
     # Assuming max rotation is 100 degrees in each direction
-    normalized_steering = max(min(relative_position / 100.0, 1.0), -1.0)
+    normalized_steering = max(min(rotation / 100.0, 1.0), -1.0)
     
     # Add a small deadzone around zero to prevent unwanted movement
     if abs(normalized_steering) < 0.1:
         normalized_steering = 0.0
     
-    # Only return movement if actively rotating
-    if not is_rotating:
-        normalized_steering = 0.0
+    # Only consider it a new direction if the steering value changed significantly
+    has_new_direction = abs(normalized_steering - last_steering_value) >= 0.1
+    last_steering_value = normalized_steering
     
     return {
         "steering": normalized_steering,
+        "has_new_input": has_new_input and has_new_direction,  # Only true when we have actual new rotation
         "left": normalized_steering < -0.1,
         "right": normalized_steering > 0.1
     }
