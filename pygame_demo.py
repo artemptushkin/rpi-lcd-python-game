@@ -72,6 +72,7 @@ class DogSprite(pygame.sprite.Sprite):
         self.jump_frames_remaining = 0
         self.change_x = 0
         self.target_x = None  # Target position to move to
+        self.movement_speed = 5  # Base movement speed
         
         # Set initial image and position
         self.image = self.textures_by_state["sit"][0][0]
@@ -89,6 +90,7 @@ class DogSprite(pygame.sprite.Sprite):
         self.current_frame = 0
         self.is_walking = False
         self.change_x = 0
+        self.target_x = None
         
     def jump(self):
         if not self.is_jumping:
@@ -103,14 +105,23 @@ class DogSprite(pygame.sprite.Sprite):
     def walk(self, direction, steering_value=0):
         self.current_state = "walk"
         self.facing_right = direction == "right"
+        
         # Calculate target position based on steering value
-        if self.target_x is None:  # Only set new target if we're not already moving
-            move_distance = abs(steering_value) * 200  # Scale the movement distance
-            if direction == "right":
-                self.target_x = min(self.rect.x + move_distance, SCREEN_WIDTH - self.rect.width)
-            else:
-                self.target_x = max(self.rect.x - move_distance, 0)
-        self.change_x = 5 if self.facing_right else -5
+        move_distance = abs(steering_value) * 200  # Scale the movement distance
+        
+        # Always update target position based on current position
+        if direction == "right":
+            self.target_x = min(self.rect.x + move_distance, SCREEN_WIDTH - self.rect.width)
+            self.change_x = self.movement_speed
+        else:
+            self.target_x = max(self.rect.x - move_distance, 0)
+            self.change_x = -self.movement_speed
+        
+        # If steering value is very small, stop moving
+        if abs(steering_value) < 0.1:
+            self.sit()
+            return
+            
         self.is_walking = True
         
     def update(self):
@@ -124,13 +135,17 @@ class DogSprite(pygame.sprite.Sprite):
             
             # Handle target position-based movement
             if self.target_x is not None and self.is_walking:
-                self.rect.x += self.change_x
-                # Check if we've reached or passed the target
-                if (self.change_x > 0 and self.rect.x >= self.target_x) or \
-                   (self.change_x < 0 and self.rect.x <= self.target_x):
-                    self.rect.x = self.target_x  # Snap to target position
-                    self.target_x = None  # Clear target
-                    self.sit()  # Stop walking
+                # Calculate distance to target
+                distance_to_target = abs(self.target_x - self.rect.x)
+                
+                if distance_to_target < abs(self.change_x):
+                    # If we're very close to target, snap to it
+                    self.rect.x = self.target_x
+                    if abs(self.change_x) <= self.movement_speed:  # Only sit if not moving fast
+                        self.sit()
+                else:
+                    # Move towards target
+                    self.rect.x += self.change_x
             
             # Keep the dog within screen boundaries
             self.rect.x = max(0, min(self.rect.x, SCREEN_WIDTH - self.rect.width))
@@ -197,17 +212,10 @@ class Game:
         
         if not self.is_mac:
             direction = lego_build_hat_input()
-            current_direction = None
-            if direction["left"]:
-                current_direction = "left"
-            elif direction["right"]:
-                current_direction = "right"
+            current_direction = direction["direction"]
             
-            # Only start a new walk if we have new input and either:
-            # 1. The direction changed, or
-            # 2. We're not already walking
-            if current_direction is not None and direction["has_new_input"] and \
-               (current_direction != self.prev_direction or not self.dog.is_walking):
+            # Only start a new walk if we have new input and a valid direction
+            if current_direction is not None and direction["has_new_input"]:
                 steering_value = abs(direction["steering"])
                 self.dog.walk(current_direction, steering_value)
             
